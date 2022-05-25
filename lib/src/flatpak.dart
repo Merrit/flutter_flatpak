@@ -27,15 +27,8 @@ class Flatpak {
   ///
   /// If there is an issue parsing the theme the return will be null.
   Stream<ThemeMode?> get themeModeStream =>
-      _dBusInterface.themePreferenceStream.map((event) {
-        switch (event) {
-          case 1:
-            return ThemeMode.dark;
-          case 2:
-            return ThemeMode.light;
-          default:
-            return null;
-        }
+      _dBusInterface.themePreferenceStream.map((int themePreference) {
+        return _intToThemeMode(themePreference);
       });
 
   /// Returns `null` if if the theme is unknown or
@@ -48,14 +41,25 @@ class Flatpak {
   /// the return will be null.
   Future<ThemeMode?> systemThemeMode() async {
     final themePreference = await _dBusInterface.readThemePreference();
+    if (themePreference == null) return null;
 
-    switch (themePreference) {
-      case 1:
-        return ThemeMode.dark;
-      case 2:
-        return ThemeMode.light;
-      default:
-        return null;
-    }
+    return _intToThemeMode(themePreference);
+  }
+}
+
+ThemeMode? _intToThemeMode(int value) {
+  switch (value) {
+    case 1:
+      return ThemeMode.dark;
+    case 2:
+      return ThemeMode.light;
+    case 0:
+      // 0 is *supposed* to be "No preference", however all
+      // current implementations seem to treat it as light preference -
+      // basically returning 1 for dark and 0 for light, never bothering
+      // to ever return 2 as they are supposed to. ¯\_(ツ)_/¯
+      return ThemeMode.light;
+    default:
+      return null;
   }
 }
